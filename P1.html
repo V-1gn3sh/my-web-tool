@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blueprint Fitness Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border-active: rgba(201,168,76,0.6);
+    --gold: #C9A84C;
+    --gold-light: #e2c572;
+    --text: #f0ece4;
+    --muted: #888880;
+    --label: #b0aca4;
+    --danger: #e05c5c;
+    --success: #5cb88a;
+    --progress-h: 3px;
+    --radius: 10px;
+    --section-colors: #C9A84C, #7eb8e0, #c97e7e, #7ec9a0, #c97eb8, #7e9ec9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  /* Progress bar */
+  #progress-bar-wrap {
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+    height: var(--progress-h); background: rgba(255,255,255,0.05);
+  }
+  #progress-fill {
+    height: 100%; background: var(--gold);
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  /* Header */
+  header {
+    padding: 3rem 2rem 2rem;
+    max-width: 760px; margin: 0 auto;
+    border-bottom: 0.5px solid var(--border);
+    text-align: center;
+  }
+  header .eyebrow {
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 1rem; font-family: 'DM Sans', sans-serif; font-weight: 400;
+  }
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500; color: var(--text);
+    line-height: 1.15; margin-bottom: 0.75rem;
+  }
+  header p {
+    font-size: 14px; color: var(--muted); max-width: 480px; margin: 0 auto;
+  }
+  /* Section tabs */
+  #section-nav {
+    max-width: 760px; margin: 0 auto;
+    display: flex; gap: 6px; padding: 1.5rem 2rem 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  #section-nav::-webkit-scrollbar { display: none; }
+  .sec-tab {
+    flex-shrink: 0;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 400;
+    border: 0.5px solid var(--border);
+    background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .sec-tab.active { background: var(--gold); color: #0d0d0d; border-color: var(--gold); font-weight: 500; }
+  .sec-tab.done { border-color: rgba(92,184,138,0.4); color: var(--success); }
+  /* Main form */
+  main { max-width: 760px; margin: 0 auto; padding: 0 2rem 6rem; }
+  /* Section block */
+  .section-block {
+    display: none;
+    padding: 2rem 0;
+    animation: fadeIn 0.3s ease;
+  }
+  .section-block.visible { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 2rem; padding-bottom: 1rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .section-badge {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem; font-weight: 500; color: var(--text);
+  }
+  .section-header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* Question card */
+  .q-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+  }
+  .q-card:focus-within { border-color: var(--border-active); }
+  .q-label {
+    font-size: 13px; font-weight: 400; color: var(--label);
+    margin-bottom: 0.75rem; display: flex; align-items: baseline; gap: 8px;
+  }
+  .q-num {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase; flex-shrink: 0;
+  }
+  .q-text { color: var(--text); font-size: 14px; font-weight: 400; line-height: 1.5; }
+  .q-hint { font-size: 11px; color: var(--muted); margin-top: 4px; font-style: italic; }
+  /* Inputs */
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%; background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px; padding: 10px 12px;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 300;
+    transition: border-color 0.2s; outline: none;
+    margin-top: 8px;
+  }
+  input[type="text"]:focus, input[type="number"]:focus,
+  textarea:focus, select:focus {
+    border-color: var(--border-active);
+  }
+  select option { background: #1e1e1e; }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  /* MCQ options */
+  .mcq-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-top: 8px;
+  }
+  .mcq-grid.single { grid-template-columns: 1fr; }
+  .mcq-opt {
+    background: var(--surface2); border: 0.5px solid var(--border);
+    border-radius: 6px; padding: 10px 14px;
+    font-size: 13px; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+    user-select: none; line-height: 1.4;
+  }
+  .mcq-opt:hover { border-color: rgba(201,168,76,0.3); color: var(--text); }
+  .mcq-opt.selected {
+    border-color: var(--gold); color: var(--gold-light);
+    background: rgba(201,168,76,0.06);
+  }
+  /* Scale / Rating */
+  .scale-wrap {
+    display: flex; gap: 8px; margin-top: 8px; align-items: center;
+  }
+  .scale-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 0.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted); font-size: 14px; font-weight: 400;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scale-btn:hover { border-color: rgba(201,168,76,0.3); color: var(--text); }
+  .scale-btn.selected { background: var(--gold); color: #0d0d0d; border-color: var(--gold); font-weight: 500; }
+  .scale-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 4px; font-size: 10px; color: var(--muted);
+  }
+  /* Navigation buttons */
+  .nav-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0 0; gap: 12px;
+  }
+  .btn {
+    padding: 11px 24px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s; border: 0.5px solid;
+    letter-spacing: 0.02em;
+  }
+  .btn-outline {
+    background: transparent; border-color: var(--border); color: var(--muted);
+  }
+  .btn-outline:hover { border-color: var(--border-active); color: var(--text); }
+  .btn-primary {
+    background: var(--gold); border-color: var(--gold); color: #0d0d0d;
+  }
+  .btn-primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); font-size: 12px; }
+  .step-indicator { font-size: 12px; color: var(--muted); }
+  /* Result screen */
+  #result-screen {
+    display: none; padding: 2rem 0;
+    animation: fadeIn 0.4s ease;
+  }
+  #result-screen h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem; font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  #result-screen .sub { font-size: 14px; color: var(--muted); margin-bottom: 2rem; }
+  #output-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    font-size: 12.5px; line-height: 1.9;
+    color: var(--label); white-space: pre-wrap;
+    font-family: 'DM Sans', sans-serif;
+    max-height: 60vh; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .copy-row { display: flex; gap: 10px; margin-top: 1rem; }
+  #copy-btn {
+    padding: 11px 24px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+    background: var(--gold); border: none; color: #0d0d0d;
+  }
+  #copy-btn:hover { background: var(--gold-light); }
+  #copy-btn.copied { background: var(--success); color: #fff; }
+  #restart-btn {
+    padding: 11px 24px; border-radius: 6px; font-size: 13px; font-weight: 400;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    background: transparent; border: 0.5px solid var(--border); color: var(--muted);
+    transition: all 0.2s;
+  }
+  #restart-btn:hover { border-color: var(--border-active); color: var(--text); }
+  .disclaimer {
+    background: rgba(201,168,76,0.05); border: 0.5px solid rgba(201,168,76,0.15);
+    border-radius: 6px; padding: 12px 16px; margin-top: 1.5rem;
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+  }
+  .disclaimer strong { color: var(--gold); }
+  /* Responsive */
+  @media (max-width: 540px) {
+    .mcq-grid { grid-template-columns: 1fr; }
+    header, main, #section-nav { padding-left: 1rem; padding-right: 1rem; }
+  }
+
+  .q-card.invalid {
+    border-color: var(--danger) !important;
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+  #clear-form-btn {
+    padding: 11px 24px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+    background: transparent; border: 0.5px solid var(--danger); color: var(--danger);
+  }
+  #clear-form-btn:hover { background: rgba(224, 92, 92, 0.1); }
+</style>
+</head>
+<body>
+
+<div id="progress-bar-wrap"><div id="progress-fill"></div></div>
+
+<header>
+  <div class="eyebrow">Blueprint Fitness System</div>
+  <h1>Your Personal<br><em>Fitness Assessment</em></h1>
+  <p>30 questions · 6 sections · Takes about 5 minutes. Your answers generate a personalised 12-month blueprint.</p>
+</header>
+
+<div id="section-nav">
+  <button class="sec-tab active" onclick="goSection(0)">A · Identity</button>
+  <button class="sec-tab" onclick="if(validateSection(0)) goSection(1)">B · Body Type</button>
+  <button class="sec-tab" onclick="if(validateSection(1)) goSection(2)">C · Medical</button>
+  <button class="sec-tab" onclick="if(validateSection(2)) goSection(3)">D · Fitness</button>
+  <button class="sec-tab" onclick="if(validateSection(3)) goSection(4)">E · Goals</button>
+  <button class="sec-tab" onclick="if(validateSection(4)) goSection(5)">F · Lifestyle</button>
+</div>
+
+<main>
+
+<!-- SECTION A -->
+<div class="section-block visible" id="sec-0">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(201,168,76,0.12);color:var(--gold);">A</div>
+    <div>
+      <h2>Personal Identity</h2>
+      <p>Basic details to personalise your blueprint</p>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">A1</span><span class="q-text">What is your name?</span></div>
+    <input type="text" id="A1" placeholder="Your first name or nickname">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">A2</span><span class="q-text">What is your age?</span></div>
+    <input type="number" id="A2" placeholder="e.g. 22" min="13" max="80">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">A3</span><span class="q-text">Biological sex</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="A3" data-val="Male">Male</div>
+      <div class="mcq-opt" data-q="A3" data-val="Female">Female</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">A4</span><span class="q-text">Where are you located? (City / State / Climate)</span></div>
+    <input type="text" id="A4" placeholder="e.g. Kozhikode, Kerala — hot & humid">
+  </div>
+
+  <div class="nav-row">
+    <span class="step-indicator">Section 1 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(0)) goSection(1)">Next →</button>
+  </div>
+</div>
+
+<!-- SECTION B -->
+<div class="section-block" id="sec-1">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(126,184,224,0.12);color:#7eb8e0;">B</div>
+    <div>
+      <h2>Body Type Self-Assessment</h2>
+      <p>Helps identify your somatotype for training approach</p>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B5</span><span class="q-text">What is your height and current weight?</span></div>
+    <input type="text" id="B5" placeholder="e.g. 172 cm, 68 kg">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B6</span><span class="q-text">How does your wrist size feel compared to others of similar height?</span><div class="q-hint">Wrap your thumb and middle finger around your opposite wrist</div></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="B6" data-val="Small — fingers overlap easily">Small — fingers overlap easily</div>
+      <div class="mcq-opt" data-q="B6" data-val="Medium — fingers just touch">Medium — fingers just touch</div>
+      <div class="mcq-opt" data-q="B6" data-val="Large — fingers don't reach">Large — fingers don't reach</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B7</span><span class="q-text">Describe your shoulder-to-hip ratio</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="B7" data-val="Narrow shoulders, narrow hips (straight frame)">Narrow shoulders, narrow hips</div>
+      <div class="mcq-opt" data-q="B7" data-val="Broader shoulders than hips (V-shape tendency)">Broader shoulders than hips</div>
+      <div class="mcq-opt" data-q="B7" data-val="Hips and shoulders roughly equal (rectangular)">Hips and shoulders roughly equal</div>
+      <div class="mcq-opt" data-q="B7" data-val="Hips wider than shoulders">Hips wider than shoulders</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B8</span><span class="q-text">Where does fat accumulate on your body first?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="B8" data-val="Mostly abdomen / belly area">Mostly abdomen / belly</div>
+      <div class="mcq-opt" data-q="B8" data-val="Hips, thighs, and lower body">Hips, thighs, lower body</div>
+      <div class="mcq-opt" data-q="B8" data-val="Evenly distributed all over">Evenly all over</div>
+      <div class="mcq-opt" data-q="B8" data-val="I don't tend to store visible fat easily">I don't store fat easily</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B9</span><span class="q-text">How does your body respond when you eat more than usual for a week?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="B9" data-val="Barely any change — hard to gain weight">Barely any change</div>
+      <div class="mcq-opt" data-q="B9" data-val="Slight weight gain, mostly muscle-looking">Slight gain, looks muscular</div>
+      <div class="mcq-opt" data-q="B9" data-val="Noticeable fat gain quickly">Noticeable fat gain</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">B10</span><span class="q-text">How would you describe your natural frame / build?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="B10" data-val="Lean and lanky — naturally thin">Lean and lanky</div>
+      <div class="mcq-opt" data-q="B10" data-val="Athletic and proportionate">Athletic and proportionate</div>
+      <div class="mcq-opt" data-q="B10" data-val="Stocky or broad — solid build">Stocky or broad</div>
+      <div class="mcq-opt" data-q="B10" data-val="Soft / rounded — carries fat easily">Soft / rounded</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="goSection(0)">← Back</button>
+    <span class="step-indicator">Section 2 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(1)) goSection(2)">Next →</button>
+  </div>
+</div>
+
+<!-- SECTION C -->
+<div class="section-block" id="sec-2">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(201,126,126,0.12);color:#c97e7e;">C</div>
+    <div>
+      <h2>Medical History</h2>
+      <p>Used only to personalise your plan safely — consult your doctor before starting any program</p>
+    </div>
+  </div>
+
+  <div class="disclaimer"><strong>Medical disclaimer:</strong> This information is used only to customise your fitness plan. If you have any diagnosed condition, please consult your doctor before beginning structured training.</div>
+
+  <div class="q-card" style="margin-top:1rem;">
+    <div class="q-label"><span class="q-num">C11</span><span class="q-text">Do you have any diagnosed medical conditions? (Select all that apply)</span></div>
+    <div class="mcq-grid single" id="C11-multi"></div>
+    <textarea id="C11-other" placeholder="Any other conditions not listed above..." style="margin-top:8px;min-height:60px;"></textarea>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C12</span><span class="q-text">Do you have any past or current injuries?</span></div>
+    <textarea id="C12" placeholder="e.g. Left knee ACL (2022), lower back pain (ongoing)... or 'None'"></textarea>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C13</span><span class="q-text">Are you currently taking any medications?</span></div>
+    <input type="text" id="C13" placeholder="List medications, or 'None'">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C14</span><span class="q-text">Any recent surgeries in the last 12 months?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="C14" data-val="No recent surgeries">No</div>
+      <div class="mcq-opt" data-q="C14" data-val="Yes — fully recovered">Yes — fully recovered</div>
+      <div class="mcq-opt" data-q="C14" data-val="Yes — still recovering">Yes — still recovering</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C15</span><span class="q-text">Pregnancy / postpartum status (if applicable)</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="C15" data-val="Not applicable">Not applicable</div>
+      <div class="mcq-opt" data-q="C15" data-val="Currently pregnant">Currently pregnant</div>
+      <div class="mcq-opt" data-q="C15" data-val="Postpartum (within 1 year)">Postpartum (within 1 year)</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C16</span><span class="q-text">Rate your typical daily energy level</span></div>
+    <div class="scale-wrap" id="scale-C16"></div>
+    <div class="scale-labels"><span>Always exhausted</span><span>High energy</span></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">C17</span><span class="q-text">Rate your typical sleep quality</span></div>
+    <div class="scale-wrap" id="scale-C17"></div>
+    <div class="scale-labels"><span>Very poor</span><span>Excellent</span></div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="if(validateSection(0)) goSection(1)">← Back</button>
+    <span class="step-indicator">Section 3 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(2)) goSection(3)">Next →</button>
+  </div>
+</div>
+
+<!-- SECTION D -->
+<div class="section-block" id="sec-3">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(126,201,160,0.12);color:#7ec9a0;">D</div>
+    <div>
+      <h2>Current Fitness Status</h2>
+      <p>Your training history and current activity levels</p>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">D18</span><span class="q-text">How many years of consistent training experience do you have?</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="D18" data-val="Complete beginner — never trained">Complete beginner — never trained</div>
+      <div class="mcq-opt" data-q="D18" data-val="Beginner — less than 1 year">Beginner — less than 1 year</div>
+      <div class="mcq-opt" data-q="D18" data-val="Intermediate — 1 to 3 years">Intermediate — 1 to 3 years</div>
+      <div class="mcq-opt" data-q="D18" data-val="Advanced — more than 3 years">Advanced — more than 3 years</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">D19</span><span class="q-text">Current activity level (outside any formal workout)</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="D19" data-val="Sedentary — desk job, mostly sitting">Sedentary — desk job, mostly sitting</div>
+      <div class="mcq-opt" data-q="D19" data-val="Lightly active — some walking daily">Lightly active — some walking</div>
+      <div class="mcq-opt" data-q="D19" data-val="Moderately active — physically involved work or daily movement">Moderately active — physical work</div>
+      <div class="mcq-opt" data-q="D19" data-val="Very active — labour-intensive work or sport">Very active — labour or sport</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">D20</span><span class="q-text">What types of exercise do you currently do, and how often?</span></div>
+    <textarea id="D20" placeholder="e.g. 3x/week gym (chest + back), 1x weekend cricket... or 'Nothing currently'"></textarea>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">D21</span><span class="q-text">Describe any previous fitness programs you've tried and the results</span></div>
+    <textarea id="D21" placeholder="e.g. Tried gym for 2 months in 2023, gained some strength but quit due to inconsistency. Tried keto — lost 3kg but couldn't sustain..."></textarea>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="if(validateSection(1)) goSection(2)">← Back</button>
+    <span class="step-indicator">Section 4 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(3)) goSection(4)">Next →</button>
+  </div>
+</div>
+
+<!-- SECTION E -->
+<div class="section-block" id="sec-4">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(201,126,184,0.12);color:#c97eb8;">E</div>
+    <div>
+      <h2>Goals & Timeline</h2>
+      <p>Define what success looks like for you</p>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">E22</span><span class="q-text">What is your primary fitness goal?</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="E22" data-val="Fat loss — lose body fat and get leaner">Fat loss — lose body fat and get leaner</div>
+      <div class="mcq-opt" data-q="E22" data-val="Muscle gain (bulk) — gain size and strength">Muscle gain (bulk) — gain size and strength</div>
+      <div class="mcq-opt" data-q="E22" data-val="Body recomposition — lose fat AND gain muscle simultaneously">Body recomposition — lose fat and gain muscle</div>
+      <div class="mcq-opt" data-q="E22" data-val="Endurance and stamina improvement">Endurance and stamina improvement</div>
+      <div class="mcq-opt" data-q="E22" data-val="General health, fitness, and energy improvement">General health and energy</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">E23</span><span class="q-text">What is your ideal timeline to see significant results?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="E23" data-val="3 months (short-term push)">3 months</div>
+      <div class="mcq-opt" data-q="E23" data-val="6 months (meaningful transformation)">6 months</div>
+      <div class="mcq-opt" data-q="E23" data-val="12 months (complete physique overhaul)">12 months</div>
+      <div class="mcq-opt" data-q="E23" data-val="Long-term lifestyle change — no fixed deadline">Long-term lifestyle</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">E24</span><span class="q-text">Is there a specific event or deadline driving this? (Optional)</span></div>
+    <input type="text" id="E24" placeholder="e.g. Wedding in August, college fest in March, or 'No specific event'">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">E25</span><span class="q-text">Which body areas do you most want to improve?</span></div>
+    <div class="mcq-grid" id="E25-multi"></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">E26</span><span class="q-text">I understand that realistic fat loss is 0.5–1 kg/week and muscle gain is 0.5–1 kg/month</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="E26" data-val="Yes — I have realistic expectations and am ready to be consistent">Yes — I'm ready to be consistent</div>
+      <div class="mcq-opt" data-q="E26" data-val="I want faster results and am willing to follow the plan strictly">I want fast results and will follow strictly</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="if(validateSection(2)) goSection(3)">← Back</button>
+    <span class="step-indicator">Section 5 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(4)) goSection(5)">Next →</button>
+  </div>
+</div>
+
+<!-- SECTION F -->
+<div class="section-block" id="sec-5">
+  <div class="section-header">
+    <div class="section-badge" style="background:rgba(126,158,201,0.12);color:#7e9ec9;">F</div>
+    <div>
+      <h2>Lifestyle & Convenience</h2>
+      <p>So your plan works in your real life, not just on paper</p>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F27</span><span class="q-text">What equipment or gym access do you have?</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="F27" data-val="Tier 1 — No equipment, bodyweight only at home">Tier 1 — No equipment, bodyweight only</div>
+      <div class="mcq-opt" data-q="F27" data-val="Tier 2 — Resistance bands and/or dumbbells at home">Tier 2 — Resistance bands / dumbbells at home</div>
+      <div class="mcq-opt" data-q="F27" data-val="Tier 3 — Full home gym (barbell, bench, rack)">Tier 3 — Full home gym setup</div>
+      <div class="mcq-opt" data-q="F27" data-val="Tier 4 — Commercial gym access (full machines, cables, barbells)">Tier 4 — Commercial gym access</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F28</span><span class="q-text">How many days per week can you realistically train?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="F28" data-val="2 days/week">2 days</div>
+      <div class="mcq-opt" data-q="F28" data-val="3 days/week">3 days</div>
+      <div class="mcq-opt" data-q="F28" data-val="4 days/week">4 days</div>
+      <div class="mcq-opt" data-q="F28" data-val="5 days/week">5 days</div>
+      <div class="mcq-opt" data-q="F28" data-val="6 days/week">6 days</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F29</span><span class="q-text">How much time is available per training session?</span></div>
+    <div class="mcq-grid">
+      <div class="mcq-opt" data-q="F29" data-val="30 minutes per session">30 min</div>
+      <div class="mcq-opt" data-q="F29" data-val="45 minutes per session">45 min</div>
+      <div class="mcq-opt" data-q="F29" data-val="60 minutes per session">60 min</div>
+      <div class="mcq-opt" data-q="F29" data-val="90 minutes per session">90 min</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F30</span><span class="q-text">What is your dietary pattern?</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="F30" data-val="Non-vegetarian (eats meat, chicken, fish, eggs)">Non-vegetarian — meat, chicken, fish, eggs</div>
+      <div class="mcq-opt" data-q="F30" data-val="Eggetarian (vegetarian + eggs)">Eggetarian — vegetarian + eggs</div>
+      <div class="mcq-opt" data-q="F30" data-val="Vegetarian (no meat, no eggs, dairy ok)">Vegetarian — dairy ok, no eggs</div>
+      <div class="mcq-opt" data-q="F30" data-val="Vegan (no animal products at all)">Vegan — no animal products</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F31</span><span class="q-text">Any food allergies or intolerances?</span></div>
+    <input type="text" id="F31" placeholder="e.g. Lactose intolerant, nut allergy... or 'None'">
+  </div>
+
+  <div class="q-card">
+    <div class="q-label"><span class="q-num">F32</span><span class="q-text">Are you open to basic supplements? (Whey, Creatine, Vitamin D)</span></div>
+    <div class="mcq-grid single">
+      <div class="mcq-opt" data-q="F32" data-val="Yes — open to supplements, budget under ₹500/month">Yes — budget under ₹500/month</div>
+      <div class="mcq-opt" data-q="F32" data-val="Yes — open to supplements, budget ₹500–₹1500/month">Yes — budget ₹500–₹1500/month</div>
+      <div class="mcq-opt" data-q="F32" data-val="Yes — open to supplements, no strict budget">Yes — no strict budget</div>
+      <div class="mcq-opt" data-q="F32" data-val="No — prefer food-only approach, no supplements">No — food-only approach</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="if(validateSection(3)) goSection(4)">← Back</button>
+    <span class="step-indicator">Section 6 of 6</span>
+    <button class="btn btn-primary" onclick="if(validateSection(5)) generateResult()">Generate My Blueprint →</button>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="result-screen">
+  <div class="eyebrow" style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem;font-family:'DM Sans',sans-serif;">Assessment Complete</div>
+  <h2>Your Blueprint Data<br><em style="font-style:italic;color:var(--muted);">is ready</em></h2>
+  <p class="sub">Copy the text below and paste it into Claude with the 12-month plan prompt.</p>
+  <pre id="output-box"></pre>
+  <div class="copy-row">
+    <button id="copy-btn" onclick="copyOutput()">Copy to Clipboard</button>
+    <button id="restart-btn" onclick="restartQuiz()">Start Over</button>
+    <button id="clear-form-btn" onclick="clearForm()">Clear Form</button>
+  </div>
+  <div class="disclaimer" style="margin-top:1.5rem;"><strong>Next step:</strong> Open Claude.ai → start a new chat → paste the copied text and add: <em>"Generate my complete personalised 12-month workout and nutrition plan based on this assessment."</em></div>
+</div>
+
+</main>
+
+<script>
+
+let answers = JSON.parse(localStorage.getItem('blueprintAnswers')) || {};
+function saveAnswers() {
+  localStorage.setItem('blueprintAnswers', JSON.stringify(answers));
+}
+
+function validateSection(idx) {
+  const sectionFields = [
+    ['A1', 'A2', 'A3', 'A4'],
+    ['B5', 'B6', 'B7', 'B8', 'B9', 'B10'],
+    ['C11', 'C12', 'C13', 'C14', 'C15', 'scale-C16', 'scale-C17'],
+    ['D18', 'D19', 'D20', 'D21'],
+    ['E22', 'E23', 'E24', 'E25', 'E26'],
+    ['F27', 'F28', 'F29', 'F30', 'F31', 'F32']
+  ];
+  const fields = sectionFields[idx];
+  let isValid = true;
+
+  fields.forEach(f => {
+    let el = document.getElementById(f);
+    let qCard = null;
+    let fieldValid = true;
+
+    if (f === 'C11' || f === 'E25') {
+       if (!answers[f] || answers[f].trim() === '') fieldValid = false;
+       const multiEl = document.getElementById(f + '-multi');
+       if (multiEl) qCard = multiEl.closest('.q-card');
+    } else if (f.startsWith('scale-')) {
+       const qKey = f.replace('scale-', '');
+       if (!answers[qKey]) fieldValid = false;
+       const scaleWrap = document.getElementById(f);
+       if (scaleWrap) qCard = scaleWrap.closest('.q-card');
+    } else {
+       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+          if (!answers[f] || answers[f].trim() === '') fieldValid = false;
+          if (f === 'A2') {
+              const age = parseInt(answers[f], 10);
+              if (isNaN(age) || age < 13 || age > 80) fieldValid = false;
+          }
+          if (f === 'B5') {
+              if (!/\d+/.test(answers[f])) fieldValid = false; // Basic format validation
+          }
+          qCard = el.closest('.q-card');
+       } else {
+          if (!answers[f]) {
+             fieldValid = false;
+             const mcqOpt = document.querySelector(`.mcq-opt[data-q="${f}"]`);
+             if (mcqOpt) qCard = mcqOpt.closest('.q-card');
+          }
+       }
+    }
+    
+    if (!fieldValid && qCard) {
+        qCard.classList.remove('invalid');
+        void qCard.offsetWidth; // Trigger reflow
+        qCard.classList.add('invalid');
+        isValid = false;
+    } else if (qCard) {
+        qCard.classList.remove('invalid');
+    }
+  });
+
+  return isValid;
+}
+
+let currentSection = 0;
+
+const totalSections = 6;
+
+// Build multi-select for conditions
+const conditions = [
+  'None / No diagnosed conditions',
+  'Hypertension (High BP)',
+  'Type 2 Diabetes or Pre-diabetes',
+  'Hypothyroidism',
+  'Hyperthyroidism',
+  'PCOD / PCOS',
+  'High cholesterol',
+  'Asthma',
+  'Heart condition',
+  'Lower back pain (chronic)',
+  'Knee pain or injury',
+  'Shoulder pain or impingement',
+  'Flat feet / ankle issues'
+];
+const c11Container = document.getElementById('C11-multi');
+conditions.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'mcq-opt';
+  d.textContent = c;
+  d.addEventListener('click', () => {
+    if (c === 'None / No diagnosed conditions') {
+      c11Container.querySelectorAll('.mcq-opt').forEach(el => el.classList.remove('selected'));
+      d.classList.toggle('selected');
+    } else {
+      c11Container.querySelector('[data-none]')?.classList.remove('selected');
+      d.classList.toggle('selected');
+    }
+    const selected = [...c11Container.querySelectorAll('.selected')].map(el => el.textContent);
+    answers['C11'] = selected.join(', ') || ''; saveAnswers();
+  });
+  c11Container.appendChild(d);
+});
+
+// Build multi-select for body parts
+const bodyParts = ['Arms / Biceps / Triceps','Chest','Shoulders','Back (upper + lower)','Core / Abs','Legs / Quads / Hamstrings','Glutes','Overall fat loss','Overall muscle mass'];
+const e25Container = document.getElementById('E25-multi');
+bodyParts.forEach(bp => {
+  const d = document.createElement('div');
+  d.className = 'mcq-opt';
+  d.textContent = bp;
+  d.addEventListener('click', () => {
+    d.classList.toggle('selected');
+    const selected = [...e25Container.querySelectorAll('.selected')].map(el => el.textContent);
+    answers['E25'] = selected.join(', ') || ''; saveAnswers();
+  });
+  e25Container.appendChild(d);
+});
+
+// Build scale buttons
+function buildScale(id, qKey) {
+  const wrap = document.getElementById(id);
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.createElement('div');
+    btn.className = 'scale-btn';
+    btn.textContent = i;
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      answers[qKey] = i + '/5'; saveAnswers();
+    });
+    wrap.appendChild(btn);
+  }
+}
+buildScale('scale-C16', 'C16');
+buildScale('scale-C17', 'C17');
+
+// MCQ single select
+document.querySelectorAll('.mcq-opt[data-q]').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const q = opt.getAttribute('data-q');
+    document.querySelectorAll(`.mcq-opt[data-q="${q}"]`).forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    answers[q] = opt.getAttribute('data-val'); saveAnswers();
+  });
+});
+
+// Text inputs
+const textInputs = ['A1','A2','A4','B5','C12','C13','D20','D21','E24','F31'];
+textInputs.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => { answers[id] = el.value; saveAnswers(); });
+});
+document.getElementById('C11-other').addEventListener('input', function() {
+  answers['C11-extra'] = this.value; saveAnswers();
+});
+
+function goSection(idx) {
+  document.querySelectorAll('.section-block').forEach((b, i) => {
+    b.classList.toggle('visible', i === idx);
+  });
+  document.querySelectorAll('.sec-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  currentSection = idx;
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  const pct = ((currentSection) / totalSections) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function generateResult() {
+  // Collect remaining text inputs
+  textInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !answers[id]) answers[id] = el.value || 'Not provided'; saveAnswers();
+  });
+  if (!answers['C11-extra']) answers['C11-extra'] = document.getElementById('C11-other').value || ''; saveAnswers();
+
+  const out = `BLUEPRINT FITNESS ASSESSMENT — CLIENT DATA
+==========================================
+
+SECTION A — PERSONAL IDENTITY
+A1 Name: ${answers['A1'] || 'Not provided'}
+A2 Age: ${answers['A2'] || 'Not provided'}
+A3 Biological Sex: ${answers['A3'] || 'Not provided'}
+A4 Location / Climate: ${answers['A4'] || 'Not provided'}
+
+SECTION B — BODY TYPE SELF-ASSESSMENT
+B5 Height & Weight: ${answers['B5'] || 'Not provided'}
+B6 Wrist Size: ${answers['B6'] || 'Not provided'}
+B7 Shoulder-to-Hip Ratio: ${answers['B7'] || 'Not provided'}
+B8 Fat Storage Area: ${answers['B8'] || 'Not provided'}
+B9 Response to Overeating: ${answers['B9'] || 'Not provided'}
+B10 Natural Frame: ${answers['B10'] || 'Not provided'}
+
+SECTION C — MEDICAL HISTORY & HEALTH CONCERNS
+C11 Diagnosed Conditions: ${answers['C11'] || 'None'}${answers['C11-extra'] ? ' | Additional: ' + answers['C11-extra'] : ''}
+C12 Past / Current Injuries: ${answers['C12'] || 'Not provided'}
+C13 Current Medications: ${answers['C13'] || 'Not provided'}
+C14 Recent Surgeries: ${answers['C14'] || 'Not provided'}
+C15 Pregnancy / Postpartum: ${answers['C15'] || 'Not provided'}
+C16 Daily Energy Level: ${answers['C16'] || 'Not provided'}
+C17 Sleep Quality: ${answers['C17'] || 'Not provided'}
+
+SECTION D — CURRENT FITNESS STATUS
+D18 Training Experience: ${answers['D18'] || 'Not provided'}
+D19 Daily Activity Level: ${answers['D19'] || 'Not provided'}
+D20 Current Exercise Habits: ${answers['D20'] || 'Not provided'}
+D21 Past Programs & Results: ${answers['D21'] || 'Not provided'}
+
+SECTION E — GOALS & TIMELINE
+E22 Primary Goal: ${answers['E22'] || 'Not provided'}
+E23 Target Timeline: ${answers['E23'] || 'Not provided'}
+E24 Specific Event / Deadline: ${answers['E24'] || 'Not provided'}
+E25 Priority Body Parts: ${answers['E25'] || 'Not provided'}
+E26 Expectation Acknowledgment: ${answers['E26'] || 'Not provided'}
+
+SECTION F — LIFESTYLE & CONVENIENCE
+F27 Equipment / Gym Access: ${answers['F27'] || 'Not provided'}
+F28 Training Days per Week: ${answers['F28'] || 'Not provided'}
+F29 Time per Session: ${answers['F29'] || 'Not provided'}
+F30 Dietary Pattern: ${answers['F30'] || 'Not provided'}
+F31 Allergies / Intolerances: ${answers['F31'] || 'Not provided'}
+F32 Supplement Openness: ${answers['F32'] || 'Not provided'}
+
+==========================================
+END OF ASSESSMENT`;
+
+  document.getElementById('output-box').textContent = out;
+  document.querySelectorAll('.section-block').forEach(b => b.classList.remove('visible'));
+  document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('progress-fill').style.width = '100%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function copyOutput() {
+  const text = document.getElementById('output-box').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+
+
+function clearForm() {
+  answers = {};
+  saveAnswers();
+  document.querySelectorAll('.mcq-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('input[type=text], input[type=number], textarea').forEach(el => el.value = '');
+  document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+  document.getElementById('result-screen').style.display = 'none';
+  goSection(0);
+}
+
+function restartQuiz() {
+  // Just start over to Section 1 without clearing data
+  document.getElementById('result-screen').style.display = 'none';
+  goSection(0);
+}
+
+
+
+function loadAnswers() {
+  // restore inputs
+  textInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && answers[id]) el.value = answers[id];
+  });
+  
+  if (answers['C11-extra']) {
+    const el = document.getElementById('C11-other');
+    if (el) el.value = answers['C11-extra'];
+  }
+
+  // restore MCQs
+  document.querySelectorAll('.mcq-opt[data-q]').forEach(opt => {
+    const q = opt.getAttribute('data-q');
+    if (answers[q] === opt.getAttribute('data-val')) {
+      opt.classList.add('selected');
+    }
+  });
+
+  // Multiselect C11 (also removes default selected None if something else is there)
+  if (answers['C11']) {
+    const selected = answers['C11'].split(', ');
+    c11Container.querySelectorAll('.mcq-opt').forEach(opt => {
+      if (selected.includes(opt.textContent)) opt.classList.add('selected');
+    });
+  }
+  
+  // Multiselect E25
+  if (answers['E25']) {
+    const selected = answers['E25'].split(', ');
+    e25Container.querySelectorAll('.mcq-opt').forEach(opt => {
+      if (selected.includes(opt.textContent)) opt.classList.add('selected');
+    });
+  }
+
+  // Scales
+  ['C16', 'C17'].forEach(qKey => {
+    if (answers[qKey]) {
+      const valStr = answers[qKey].split('/')[0];
+      const wrap = document.getElementById('scale-' + qKey);
+      if (wrap) {
+        wrap.querySelectorAll('.scale-btn').forEach(btn => {
+          if (btn.textContent === valStr) btn.classList.add('selected');
+        });
+      }
+    }
+  });
+}
+
+loadAnswers();
+
+updateProgress();
+</script>
+</body>
+</html>
